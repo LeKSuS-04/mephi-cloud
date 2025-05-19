@@ -40,10 +40,32 @@ resource "rustack_port" "k3s_port" {
   ]
 }
 
-resource "rustack_vm" "k3s_vm" {
-  count  = 3
+resource "rustack_vm" "k3s_master" {
   vdc_id = resource.rustack_vdc.k3s.id
-  name   = "k3s-${count.index}"
+  name   = "k3s-master"
+  cpu    = 4
+  ram    = 4
+
+  template_id = data.rustack_template.k3s_ubuntu20.id
+
+  user_data = file("cloud-config.yaml")
+
+  system_disk {
+    size               = 30
+    storage_profile_id = data.rustack_storage_profile.k3s_ssd.id
+  }
+
+  networks {
+    id = resource.rustack_port.k3s_port[0].id
+  }
+
+  floating = true
+}
+
+resource "rustack_vm" "k3s_agent" {
+  count  = 2
+  vdc_id = resource.rustack_vdc.k3s.id
+  name   = "k3s-agent-${count.index + 1}"
   cpu    = 2
   ram    = 2
 
@@ -57,12 +79,12 @@ resource "rustack_vm" "k3s_vm" {
   }
 
   networks {
-    id = resource.rustack_port.k3s_port[count.index].id
+    id = resource.rustack_port.k3s_port[count.index + 1].id
   }
 
-  floating = true
+  floating = false
 }
 
-output "k3s_vm_ip" {
-  value = resource.rustack_vm.k3s_vm[*].floating_ip
+output "k3s_master_ip" {
+  value = resource.rustack_vm.k3s_master.floating_ip
 }
