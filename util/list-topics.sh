@@ -7,4 +7,4 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
-/opt/kafka/bin/kafka-topics.sh --list --bootstrap-server "$1"
+docker run --rm -it apache/kafka:3.9.1 /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server "$1"

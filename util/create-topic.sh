@@ -7,4 +7,4 @@ if [ $# -ne 2 ]; then
     exit 1
 fi
 
-/opt/kafka/bin/kafka-topics.sh --create --topic "$1" --bootstrap-server "$2"
+docker run --rm -it apache/kafka:3.9.1 /opt/kafka/bin/kafka-topics.sh --create --topic "$1" --bootstrap-server "$2"
