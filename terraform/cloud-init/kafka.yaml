@@ -1,0 +1,119 @@
+#cloud-config
+users:
+  - name: ubuntu
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    groups: [sudo, docker]
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJ4QwOa2LeYtJwolg7WGH9pJC6NPltM2YJ55nHY2upA4KP6Umgja+YT9UD9xDhoPGotuQfFXwVy2fca+C2mQw5Q= leksus@leksusbook
+
+write_files:
+  - path: /etc/systemd/system/kafka.service
+    content: |
+      [Unit]
+      Description=Apache Kafka server (broker)
+      Documentation=http://kafka.apache.org/documentation.html
+      Requires=network.target
+      After=network.target
+
+      [Service]
+      Type=simple
+      User=kafka
+      Group=kafka
+      Environment=JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+      ExecStart=/opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties
+      ExecStop=/opt/kafka/bin/kafka-server-stop.sh
+      Restart=on-failure
+      RestartSec=10
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root:root
+    permissions: "0644"
+
+  - path: /opt/setup-kafka.sh
+    content: |
+      #!/bin/bash
+      set -e
+
+      # Variables
+      KAFKA_VERSION="3.9.1"
+      KAFKA_DIR="/opt/kafka_2.13-${KAFKA_VERSION}"
+      KAFKA_LINK="/opt/kafka"
+
+      # Download and setup Kafka
+      cd /opt
+      wget -q --tries=3 --timeout=30 https://dlcdn.apache.org/kafka/${KAFKA_VERSION}/kafka_2.13-${KAFKA_VERSION}.tgz
+      tar -xzf kafka_2.13-${KAFKA_VERSION}.tgz
+      rm kafka_2.13-${KAFKA_VERSION}.tgz
+
+      # Create symlink
+      ln -sf kafka_2.13-${KAFKA_VERSION} kafka
+
+      # Create directories
+      mkdir -p ${KAFKA_DIR}/log
+      mkdir -p ${KAFKA_DIR}/data
+
+      # Write server.properties
+      cat > ${KAFKA_DIR}/config/server.properties << 'EOF'
+      # kRaft
+      process.roles=broker,controller
+      node.id=1
+      controller.quorum.voters=1@localhost:19093
+      controller.listener.names=CONTROLLER
+
+      # Listeners
+      listeners=PLAINTEXT://:9092,CONTROLLER://:19093
+      advertised.listeners=PLAINTEXT://localhost:9092
+      listener.security.protocol.map=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+
+      # Log directory
+      log.dirs=/opt/kafka/log
+
+      # Threads
+      num.network.threads=3
+      num.io.threads=8
+
+      # Network
+      socket.send.buffer.bytes=102400
+      socket.receive.buffer.bytes=102400
+      socket.request.max.bytes=104857600
+
+      # Availability
+      num.partitions=1
+      num.recovery.threads.per.data.dir=1
+      offsets.topic.replication.factor=1
+      transaction.state.log.replication.factor=1
+      transaction.state.log.min.isr=1
+      EOF
+
+      # Format Kafka storage
+      ${KAFKA_LINK}/bin/kafka-storage.sh random-uuid > ${KAFKA_LINK}/cluster_id
+      ${KAFKA_LINK}/bin/kafka-storage.sh format -t $(cat ${KAFKA_LINK}/cluster_id) -c ${KAFKA_LINK}/config/server.properties
+
+      # Set ownership
+      chown -R kafka:kafka ${KAFKA_DIR}
+      chown -R kafka:kafka ${KAFKA_LINK}
+    owner: root:root
+    permissions: "0755"
+
+runcmd:
+  - apt-get update -y
+  - apt-get install -y openjdk-11-jre-headless apt-transport-https ca-certificates curl gnupg lsb-release software-properties-common
+
+  - mkdir -p /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  - echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu focal stable" > /etc/apt/sources.list.d/docker.list
+  - apt-get update -y
+  - apt-get install -y docker-ce docker-ce-cli containerd.io
+  - systemctl enable docker
+  - systemctl start docker
+
+  - useradd -m -s /bin/bash kafka || true
+  - usermod -aG docker ubuntu || true
+
+  - /opt/setup-kafka.sh
+
+  - systemctl daemon-reload
+  - systemctl enable kafka
+  - systemctl start kafka

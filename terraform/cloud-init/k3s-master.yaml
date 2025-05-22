@@ -1,0 +1,18 @@
+#cloud-config
+users:
+  - name: ubuntu
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    groups: sudo
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJ4QwOa2LeYtJwolg7WGH9pJC6NPltM2YJ55nHY2upA4KP6Umgja+YT9UD9xDhoPGotuQfFXwVy2fca+C2mQw5Q= leksus@leksusbook
+
+write_files:
+  - path: /etc/rancher/k3s/config.yaml
+    owner: root:root
+    permissions: "0644"
+
+runcmd:
+  - curl -sfL https://get.k3s.io | sh -s - server --token ${k3s_token}
+  - systemctl enable k3s
+  - systemctl start k3s

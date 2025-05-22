@@ -47,7 +47,7 @@ resource "rustack_vm" "kafka_vm" {
 
   template_id = data.rustack_template.kafka_ubuntu20.id
 
-  user_data = file("cloud-config.yaml")
+  user_data = file("cloud-init/kafka.yaml")
 
   system_disk {
     size               = 30

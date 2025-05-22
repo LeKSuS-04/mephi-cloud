@@ -1,0 +1,13 @@
+#cloud-config
+users:
+  - name: ubuntu
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    groups: sudo
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJ4QwOa2LeYtJwolg7WGH9pJC6NPltM2YJ55nHY2upA4KP6Umgja+YT9UD9xDhoPGotuQfFXwVy2fca+C2mQw5Q= leksus@leksusbook
+
+runcmd:
+  - curl -sfL https://get.k3s.io | sh -s - agent --server https://${k3s_master_ip}:6443 --token ${k3s_token}
+  - systemctl enable k3s-agent
+  - systemctl start k3s-agent
