@@ -51,7 +51,7 @@ resource "rustack_vm" "k3s_master" {
   user_data = file("cloud-config.yaml")
 
   system_disk {
-    size               = 30
+    size               = 50
     storage_profile_id = data.rustack_storage_profile.k3s_ssd.id
   }
 
@@ -74,7 +74,7 @@ resource "rustack_vm" "k3s_agent" {
   user_data = file("cloud-config.yaml")
 
   system_disk {
-    size               = 30
+    size               = 50
     storage_profile_id = data.rustack_storage_profile.k3s_ssd.id
   }
 

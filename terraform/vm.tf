@@ -42,8 +42,8 @@ resource "rustack_port" "kafka_port" {
 resource "rustack_vm" "kafka_vm" {
   vdc_id = resource.rustack_vdc.kafka.id
   name   = "kafka"
-  cpu    = 2
-  ram    = 2
+  cpu    = 4
+  ram    = 8
 
   template_id = data.rustack_template.kafka_ubuntu20.id
 
