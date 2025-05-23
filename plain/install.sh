@@ -36,7 +36,7 @@ cp configs/server.properties /opt/kafka/config/server.properties
 
 echo "Formatting directories"
 /opt/kafka/bin/kafka-storage.sh random-uuid > /opt/kafka/cluster_id
-/opt/kafka/bin/kafka-storage.sh format -t $(cat /opt/kafka/cluster_id) -c /opt/kafka/config/server.properties
+/opt/kafka/bin/kafka-storage.sh format -t "$(cat /opt/kafka/cluster_id)" -c /opt/kafka/config/server.properties
 
 echo "Setting ownership"
 chown -R kafka:kafka /opt/kafka_2.13-$VERSION
