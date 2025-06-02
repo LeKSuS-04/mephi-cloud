@@ -53,7 +53,7 @@ resource "rustack_vm" "k3s_master" {
 
   template_id = data.rustack_template.k3s_ubuntu20.id
 
-  user_data = templatefile("cloud-init/cloud-config-k3s-master.yaml", {
+  user_data = templatefile("cloud-init/k3s-master.yaml", {
     k3s_token = var.k3s_token
   })
 
@@ -78,7 +78,7 @@ resource "rustack_vm" "k3s_agent" {
 
   template_id = data.rustack_template.k3s_ubuntu20.id
 
-  user_data = templatefile("cloud-init/cloud-config-k3s-agent.yaml", {
+  user_data = templatefile("cloud-init/k3s-agent.yaml", {
     k3s_token     = var.k3s_token
     k3s_master_ip = resource.rustack_vm.k3s_master.floating_ip
   })
